@@ -23,6 +23,12 @@ export default class {
             })(size);
             this.options = Object.assign({}, options);
             this.config();
+            this.gradLine_outer = this.ctx.createLinearGradient(this.arcs.outer.grad.start.x, this.arcs.outer.grad.start.y, this.arcs.outer.grad.end.x, this.arcs.outer.grad.end.y);
+            this.gradLine_outer.addColorStop(0, '#84bae2');
+            this.gradLine_outer.addColorStop(1, '#809bb0');
+            this.gradLine_inner = this.ctx.createLinearGradient(this.arcs.inner.grad.start.x, this.arcs.inner.grad.start.y, this.arcs.inner.grad.end.x, this.arcs.inner.grad.end.y);
+            this.gradLine_inner.addColorStop(0, '#315788');
+            this.gradLine_inner.addColorStop(1, '#0e3965');
         }
         // 细化配置和参数
     config() {
@@ -30,8 +36,17 @@ export default class {
             // 设定画布尺寸
             _this.canvas.width = _this.size.width;
             _this.canvas.height = _this.size.height;
+            // 旋转动画计数，用来控制旋转触发边界
             _this.rotateCount = 0;
+            // 动画是否在进行的标志位
             _this.aniProcessing = true;
+            // canvas绘制动画timer
+            _this.aniTimer = null;
+            // 绘制完毕之后触发ratate的timer
+            _this.stopTimer = null;
+            // rotate动画控制间隔的timer
+            _this.rotateTimer = null;
+            // 基础参数
             _this.baseParams = Object.assign({}, {
                 // 圆点坐标
                 origin: {
@@ -47,7 +62,9 @@ export default class {
                 // 绘制阶段每帧绘制的角度
                 drawStep: 5,
                 // 动画阶段每帧旋转的角度
-                rotateStep: 2
+                rotateStep: 2,
+                // 绘制完成的时间间隔
+                drawDuration: 270/5*17
             });
             let arc_outer = null,
                 arc_inner = null;
@@ -110,66 +127,49 @@ export default class {
         // @method 绘制方法
     draw() {
             let _this = this;
-            if (_this.arcs.outer.outerAngles.end <= -360 && _this.arcs.inner.outerAngles.end >= 90) {
-                window.cancelAnimationFrame(_this.aniTimer);
-                if(!_this.stopTimer){
-                _this.stopTimer = setTimeout(function() {
-                    // _this.timer = window.requestAnimationFrame(_this.draw.bind(_this));
-                    if (_this.arcs.outer.outerAngles.end <= (-720 - _this.rotateCount * 360) && _this.arcs.inner.outerAngles.end >= (450 + _this.rotateCount * 360)) {
-                        window.cancelAnimationFrame(_this.aniTimer);
-                        _this.aniProcessing = false;
-                        if(!_this.miniTimer){
-                            _this.miniTimer = setTimeout(function(){
-                                if(!_this.aniProcessing){
-                                    _this.rotateCount++;
-                                    _this.aniProcessing = true;
-                                    // clearTimeout(_this.miniTimer);
-                                }
-                            },3000);
-                        }
-                    } else {
-                        function _draw(){
-                            console.log('fff')
-                            _this.arcs.outer.outerAngles = Object.assign({}, _this.arcs.outer.outerAngles, {
-                                start: _this.arcs.outer.outerAngles.start - _this.baseParams.rotateStep,
-                                end: _this.arcs.outer.outerAngles.end - _this.baseParams.rotateStep
-                            });
-                            _this.arcs.outer.innerAngles = Object.assign({}, _this.arcs.outer.innerAngles, {
-                                start: _this.arcs.outer.innerAngles.start - _this.baseParams.rotateStep,
-                                end: _this.arcs.outer.innerAngles.end - _this.baseParams.rotateStep
-                            });
-                            _this.arcs.inner.outerAngles = Object.assign({}, _this.arcs.inner.outerAngles, {
-                                start: _this.arcs.inner.outerAngles.start + _this.baseParams.rotateStep,
-                                end: _this.arcs.inner.outerAngles.end + _this.baseParams.rotateStep
-                            });
-                            _this.arcs.inner.innerAngles = Object.assign({}, _this.arcs.inner.innerAngles, {
-                                start: _this.arcs.inner.innerAngles.start + _this.baseParams.rotateStep,
-                                end: _this.arcs.inner.innerAngles.end + _this.baseParams.rotateStep
-                            });
-                            _this.drawNextFrame();
-                            _this.aniTimer = window.requestAnimationFrame(_draw);
-                        }
-                        _this.aniTimer = window.requestAnimationFrame(_draw);
-                        // console.log('fff')
-                        // _this.arcs.outer.outerAngles = Object.assign({}, _this.arcs.outer.outerAngles, {
-                        //     start: _this.arcs.outer.outerAngles.start - _this.baseParams.rotateStep,
-                        //     end: _this.arcs.outer.outerAngles.end - _this.baseParams.rotateStep
-                        // });
-                        // _this.arcs.outer.innerAngles = Object.assign({}, _this.arcs.outer.innerAngles, {
-                        //     start: _this.arcs.outer.innerAngles.start - _this.baseParams.rotateStep,
-                        //     end: _this.arcs.outer.innerAngles.end - _this.baseParams.rotateStep
-                        // });
-                        // _this.arcs.inner.outerAngles = Object.assign({}, _this.arcs.inner.outerAngles, {
-                        //     start: _this.arcs.inner.outerAngles.start + _this.baseParams.rotateStep,
-                        //     end: _this.arcs.inner.outerAngles.end + _this.baseParams.rotateStep
-                        // });
-                        // _this.arcs.inner.innerAngles = Object.assign({}, _this.arcs.inner.innerAngles, {
-                        //     start: _this.arcs.inner.innerAngles.start + _this.baseParams.rotateStep,
-                        //     end: _this.arcs.inner.innerAngles.end + _this.baseParams.rotateStep
-                        // });
-                        // _this.drawNextFrame();
+            // ratate animation
+            function _rotate() {
+                if (_this.arcs.outer.outerAngles.end <= (-720 - _this.rotateCount * 360) && _this.arcs.inner.outerAngles.end >= (450 + _this.rotateCount * 360)) {
+                    window.cancelAnimationFrame(_this.aniTimer);
+                    _this.aniProcessing = false;
+                    if (!_this.rotateTimer) {
+                        _this.rotateTimer = setTimeout(function() {
+                            if (!_this.aniProcessing) {
+                                _this.rotateCount++;
+                                _this.aniProcessing = true;
+                                clearTimeout(_this.rotateTimer);
+                                _this.rotateTimer = null;
+                                _this.aniTimer = window.requestAnimationFrame(_rotate);
+                            }
+                        }, 10000);
                     }
-                }, 3000);
+                } else {
+                    _this.arcs.outer.outerAngles = Object.assign({}, _this.arcs.outer.outerAngles, {
+                        start: _this.arcs.outer.outerAngles.start - _this.baseParams.rotateStep,
+                        end: _this.arcs.outer.outerAngles.end - _this.baseParams.rotateStep
+                    });
+                    _this.arcs.outer.innerAngles = Object.assign({}, _this.arcs.outer.innerAngles, {
+                        start: _this.arcs.outer.innerAngles.start - _this.baseParams.rotateStep,
+                        end: _this.arcs.outer.innerAngles.end - _this.baseParams.rotateStep
+                    });
+                    _this.arcs.inner.outerAngles = Object.assign({}, _this.arcs.inner.outerAngles, {
+                        start: _this.arcs.inner.outerAngles.start + _this.baseParams.rotateStep,
+                        end: _this.arcs.inner.outerAngles.end + _this.baseParams.rotateStep
+                    });
+                    _this.arcs.inner.innerAngles = Object.assign({}, _this.arcs.inner.innerAngles, {
+                        start: _this.arcs.inner.innerAngles.start + _this.baseParams.rotateStep,
+                        end: _this.arcs.inner.innerAngles.end + _this.baseParams.rotateStep
+                    });
+                    _this.drawNextFrame();
+                    _this.aniTimer = window.requestAnimationFrame(_rotate);
+                }
+            }
+            if (_this.arcs.outer.outerAngles.end <= -360 && _this.arcs.inner.outerAngles.end >= 90) {
+                if (!_this.stopTimer) {
+                    window.cancelAnimationFrame(_this.aniTimer);
+                    _this.stopTimer = setTimeout(function() {
+                        _this.aniTimer = window.requestAnimationFrame(_rotate);
+                    }, 3000);
                 }
             } else {
                 //upgrade outer arcs
@@ -199,28 +199,22 @@ export default class {
         this.ctx.arc(_this.baseParams.origin.x, _this.baseParams.origin.y, _this.arcs.outer.outerRadius, _this.arcs.outer.outerAngles.start * _this.baseParams.rate, _this.arcs.outer.outerAngles.end * _this.baseParams.rate, true);
         this.ctx.arc(_this.baseParams.origin.x, _this.baseParams.origin.y, _this.arcs.outer.innerRadius, _this.arcs.outer.innerAngles.start * _this.baseParams.rate, _this.arcs.outer.innerAngles.end * _this.baseParams.rate, false);
         this.ctx.closePath();
-        let gradLine_outer = this.ctx.createLinearGradient(_this.arcs.outer.grad.start.x, _this.arcs.outer.grad.start.y, _this.arcs.outer.grad.end.x, _this.arcs.outer.grad.end.y);
-        gradLine_outer.addColorStop(0, '#84bae2');
-        gradLine_outer.addColorStop(1, '#809bb0');
         this.ctx.shadowOffsetX = 1;
         this.ctx.shadowOffsetY = 2;
         this.ctx.shadowBlur = 2;
         this.ctx.shadowColor = "rgba(130,129,129,0.75)";
-        this.ctx.fillStyle = gradLine_outer;
+        this.ctx.fillStyle = this.gradLine_outer;
         this.ctx.fill();
         // draw inner arcs
         this.ctx.beginPath();
         this.ctx.arc(_this.baseParams.origin.x, _this.baseParams.origin.y, _this.arcs.inner.outerRadius, _this.arcs.inner.outerAngles.start * _this.baseParams.rate, _this.arcs.inner.outerAngles.end * _this.baseParams.rate, false);
         this.ctx.arc(_this.baseParams.origin.x, _this.baseParams.origin.y, _this.arcs.inner.innerRadius, _this.arcs.inner.innerAngles.start * _this.baseParams.rate, _this.arcs.inner.innerAngles.end * _this.baseParams.rate, true);
         this.ctx.closePath();
-        let gradLine_inner = this.ctx.createLinearGradient(_this.arcs.inner.grad.start.x, _this.arcs.inner.grad.start.y, _this.arcs.inner.grad.end.x, _this.arcs.inner.grad.end.y);
-        gradLine_inner.addColorStop(0, '#315788');
-        gradLine_inner.addColorStop(1, '#0e3965');
         this.ctx.shadowOffsetX = 1;
         this.ctx.shadowOffsetY = 2;
         this.ctx.shadowBlur = 2;
-        this.ctx.shadowColor = "rgba(128,155,1760.9)";
-        this.ctx.fillStyle = gradLine_inner;
+        this.ctx.shadowColor = "rgba(128,155,176,0.9)";
+        this.ctx.fillStyle = this.gradLine_inner;
         this.ctx.fill();
     }
 }

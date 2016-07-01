@@ -2,9 +2,10 @@
   "name": "boilogo",
   "version": "0.0.0",
   "description": "boilogo built on boi",
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
+    "extract-text-webpack-plugin": "^1.0.1",
+    "webpack": "^1.13.1"
   },
   "keywords": [
     "boi"

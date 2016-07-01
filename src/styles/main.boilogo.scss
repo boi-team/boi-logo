@@ -1,5 +1,58 @@
-.container{
-    width: 200px;
-    height: 200px;
-    margin: 100px auto;
+@mixin strictHeight($size) {
+  height: $size;
+  line-height: $size;
+}
+@mixin transition($rule){
+    -webkit-transition: $rule;
+    -o-transition: $rule;
+    -moz-transition: $rule;
+    -ms-transition: $rule;
+    transition: $rule;
+}
+@font-face {
+    font-family: TrumpTownPro;
+    src: url('../assets/fonts/TrumpTownPro.otf');
+}
+.container {
+  /*width: 200px;*/
+  height: 200px;
+  margin: 100px auto;
+
+  #canvas {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .logo_content {
+    display: inline-block;
+    vertical-align: middle;
+    font-family: TrumpTownPro;
+    color: #1c537d;
+    .title,
+    .subtitle {
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .title {
+      font-size: 50px;
+      @include strictHeight(50px);
+      @include transition(all 0.5s ease-in-out 0.1s);
+      opacity: 1;
+      &.hide{
+          opacity: 0;
+      }
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 35px;
+      opacity: 1;
+      @include transition(all 0.5s ease-in-out 0.6s);
+      @include strictHeight(35px);
+      &.hide{
+          opacity: 0;
+      }
+    }
+  }
 }

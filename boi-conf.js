@@ -1,4 +1,3 @@
-
 // 配置
 boi.spec('basic', {
     appName: 'boilogo',
@@ -6,7 +5,7 @@ boi.spec('basic', {
     localPath: {
         src: './src/',
         dest: './dest/',
-        thirdparty: '/libs/'
+        thirdparty: './libs/'
     },
     // cdn url
     cdn: {
@@ -37,6 +36,6 @@ boi.spec('html', {
 });
 
 boi.spec('image', {
-    extType: ['png', 'jpg'],
-    destDir: 'image'
+    extType: ['png', 'jpg','otf','ico'],
+    destDir: 'images'
 });
