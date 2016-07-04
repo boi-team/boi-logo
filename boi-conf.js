@@ -33,6 +33,7 @@ boi.spec('style', {
 boi.spec('html', {
     extType: 'html',
     srcDir: 'views',
+    favicon: 'src/assets/images/favicon.png'
 });
 
 boi.spec('image', {
